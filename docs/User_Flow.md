@@ -1,4 +1,4 @@
-# PlanFit 사용자 흐름도 (User Flow) 및 화면 명세
+# FlowPlan 사용자 흐름도 (User Flow) 및 화면 명세
 
 ## 1. 회원가입 및 로그인 (Authentication)
 * **[시작 화면]** -> 소셜 로그인 버튼(Google/Kakao) 클릭 -> **[회원가입/로그인 처리]**
