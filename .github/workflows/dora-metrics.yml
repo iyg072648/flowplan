@@ -1,0 +1,51 @@
+name: DORA Metrics Collector
+
+on:
+  pull_request:
+    types: [closed]
+  issues:
+    types: [closed]
+  # 수동 실행 또는 실제 배포 워크플로우에 연동하기 위한 트리거
+  workflow_dispatch:
+
+jobs:
+  calculate-dora-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⏱️ Calculate Lead Time for Changes
+        # PR이 Merge 되었을 때 리드 타임(변경사항 반영 시간) 계산
+        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const createdAt = new Date(context.payload.pull_request.created_at);
+            const mergedAt = new Date(context.payload.pull_request.merged_at);
+            const leadTimeMs = mergedAt - createdAt;
+            const leadTimeHours = (leadTimeMs / (1000 * 60 * 60)).toFixed(2);
+            
+            console.log(`[DORA Metric] Lead Time for Changes: ${leadTimeHours} hours`);
+            console.log(`(PR Created: ${createdAt.toISOString()}, Merged: ${mergedAt.toISOString()})`);
+            // TODO: Datadog, Prometheus 등 외부 모니터링 툴로 전송 로직 추가
+
+      - name: 🛠️ Calculate MTTR (Mean Time To Restore)
+        # 'bug' 라벨이 붙은 이슈가 해결(Closed)되었을 때 복구 시간 계산
+        if: github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'bug')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const createdAt = new Date(context.payload.issue.created_at);
+            const closedAt = new Date(context.payload.issue.closed_at);
+            const restoreTimeMs = closedAt - createdAt;
+            const restoreTimeHours = (restoreTimeMs / (1000 * 60 * 60)).toFixed(2);
+            
+            console.log(`[DORA Metric] MTTR (Time to Fix Bug): ${restoreTimeHours} hours`);
+            console.log(`(Bug Reported: ${createdAt.toISOString()}, Fixed: ${closedAt.toISOString()})`);
+            // TODO: 누적 MTTR 계산을 위해 데이터베이스 전송 로직 추가
+
+      - name: 🚀 Deployment Frequency & Change Failure Rate (Simulation)
+        # 배포가 발생했을 때 배포 빈도 및 실패율 집계를 위한 트리거
+        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+        run: |
+          echo "[DORA Metric] Deployment Frequency: +1 (Deployment Triggered)"
+          echo "[DORA Metric] Change Failure Rate: Monitoring for new bugs (bugs / total_deployments)"
+          echo "💡 현업에서는 이 단계에서 배포 스크립트를 실행하고, 그 결과를 메트릭 서버로 전송합니다."
