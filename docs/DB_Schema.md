@@ -1,6 +1,6 @@
 # FlowPlan DB 스키마 (ERD) 설계서
 
-본 문서는 FlowPlan 서비스의 데이터베이스 스키마 및 테이블 간의 관계(ERD)를 정의합니다. (PostgreSQL 기준)
+본 문서는 FlowPlan 서비스의 데이터베이스 스키마 및 테이블 간의 관계(ERD)를 정의합니다. (MySQL 기준)
 
 ## 1. ERD (Entity Relationship Diagram)
 

@@ -20,7 +20,7 @@
 ## 4. 기술 스택 (Tech Stack)
 *   **Frontend (모바일 앱 혹은 PWA):** React Native 또는 Flutter (안드로이드/iOS 동시 지원)
 *   **Backend:** Node.js (Express) 또는 Spring Boot
-*   **Database:** PostgreSQL (사용자 데이터, 스케줄 정보)
+*   **Database:** MySQL (사용자 데이터, 스케줄 정보)
 *   **AI & 3rd Party API:**
     *   OpenAI API (GPT-4o/3.5-turbo): 일정 분할 및 재조정 프롬프팅
     *   Google Cloud Vision API (또는 Tesseract): 교재 목차 이미지 OCR 인식

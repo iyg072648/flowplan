@@ -50,6 +50,6 @@
 ## 6. 개발 환경 및 기술 스택
 * **Frontend:** React Native (모바일) / React (웹 뷰 관리자)
 * **Backend:** Node.js (Express)
-* **Database:** PostgreSQL
+* **Database:** MySQL
 * **External APIs:** OpenAI API, Google Cloud Vision API
 * **Deployment:** AWS EC2 & RDS, GitHub Actions (CI/CD)
