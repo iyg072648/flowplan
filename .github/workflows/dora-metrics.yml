@@ -5,47 +5,112 @@ on:
     types: [closed]
   issues:
     types: [closed]
-  # 수동 실행 또는 실제 배포 워크플로우에 연동하기 위한 트리거
   workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
 
 jobs:
   calculate-dora-metrics:
     runs-on: ubuntu-latest
     steps:
-      - name: ⏱️ Calculate Lead Time for Changes
-        # PR이 Merge 되었을 때 리드 타임(변경사항 반영 시간) 계산
-        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📊 Calculate All 4 DORA Metrics
         uses: actions/github-script@v7
         with:
           script: |
-            const createdAt = new Date(context.payload.pull_request.created_at);
-            const mergedAt = new Date(context.payload.pull_request.merged_at);
-            const leadTimeMs = mergedAt - createdAt;
-            const leadTimeHours = (leadTimeMs / (1000 * 60 * 60)).toFixed(2);
-            
-            console.log(`[DORA Metric] Lead Time for Changes: ${leadTimeHours} hours`);
-            console.log(`(PR Created: ${createdAt.toISOString()}, Merged: ${mergedAt.toISOString()})`);
-            // TODO: Datadog, Prometheus 등 외부 모니터링 툴로 전송 로직 추가
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
 
-      - name: 🛠️ Calculate MTTR (Mean Time To Restore)
-        # 'bug' 라벨이 붙은 이슈가 해결(Closed)되었을 때 복구 시간 계산
-        if: github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'bug')
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const createdAt = new Date(context.payload.issue.created_at);
-            const closedAt = new Date(context.payload.issue.closed_at);
-            const restoreTimeMs = closedAt - createdAt;
-            const restoreTimeHours = (restoreTimeMs / (1000 * 60 * 60)).toFixed(2);
-            
-            console.log(`[DORA Metric] MTTR (Time to Fix Bug): ${restoreTimeHours} hours`);
-            console.log(`(Bug Reported: ${createdAt.toISOString()}, Fixed: ${closedAt.toISOString()})`);
-            // TODO: 누적 MTTR 계산을 위해 데이터베이스 전송 로직 추가
+            // 1. 머지된 PR 목록 조회 (배포 빈도 및 리드 타임 계산용)
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              owner,
+              repo,
+              state: 'closed',
+              per_page: 100
+            });
 
-      - name: 🚀 Deployment Frequency & Change Failure Rate (Simulation)
-        # 배포가 발생했을 때 배포 빈도 및 실패율 집계를 위한 트리거
-        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+            const mergedPRs = pulls.filter(pr => pr.merged_at);
+            const totalDeployments = mergedPRs.length;
+
+            let totalLeadTimeHours = 0;
+            mergedPRs.forEach(pr => {
+              const created = new Date(pr.created_at);
+              const merged = new Date(pr.merged_at);
+              totalLeadTimeHours += (merged - created) / (1000 * 60 * 60);
+            });
+            const avgLeadTimeHours = totalDeployments > 0 ? (totalLeadTimeHours / totalDeployments).toFixed(2) : 0;
+
+            // 2. 닫힌 bug 라벨 이슈 조회 (MTTR 및 변경 실패율 계산용)
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'closed',
+              labels: 'bug',
+              per_page: 100
+            });
+
+            const bugIssues = issues.filter(issue => !issue.pull_request);
+            const totalBugs = bugIssues.length;
+
+            let totalMttrHours = 0;
+            bugIssues.forEach(issue => {
+              const created = new Date(issue.created_at);
+              const closed = new Date(issue.closed_at);
+              totalMttrHours += (closed - created) / (1000 * 60 * 60);
+            });
+            const avgMttrHours = totalBugs > 0 ? (totalMttrHours / totalBugs).toFixed(2) : 0;
+
+            // 3. 변경 실패율 (CFR) 계산
+            const cfr = totalDeployments > 0 ? ((totalBugs / totalDeployments) * 100).toFixed(1) : 0;
+
+            // 4. 콘솔 로그 출력
+            console.log('====================================');
+            console.log('🚀 [DORA Metric] Deployment Frequency:', totalDeployments, 'deployments');
+            console.log('⏱️ [DORA Metric] Lead Time for Changes:', avgLeadTimeHours, 'hours');
+            console.log('🛠️ [DORA Metric] MTTR:', avgMttrHours, 'hours');
+            console.log('📉 [DORA Metric] Change Failure Rate:', cfr, '%');
+            console.log('====================================');
+
+            // 5. GitHub Actions Step Summary (결과 화면 마크다운 출력)
+            const summaryTable = `
+            ## 📊 DORA Metrics 종합 측정 결과
+
+            | 지표 (Metric) | 측정값 | 평가 등급 (DORA Standard) |
+            | :--- | :--- | :--- |
+            | 🚀 **배포 빈도 (Deployment Frequency)** | **${totalDeployments} 회** | ${totalDeployments >= 10 ? '🟢 Elite (On-demand)' : '🟡 High / Medium'} |
+            | ⏱️ **변경 리드 타임 (Lead Time)** | **${avgLeadTimeHours} 시간** | ${avgLeadTimeHours <= 24 ? '🟢 Elite (< 1 day)' : '🟡 High'} |
+            | 🛠️ **복구 시간 (MTTR)** | **${avgMttrHours} 시간** | ${avgMttrHours <= 1 ? '🟢 Elite (< 1 hour)' : '🟡 High'} |
+            | 📉 **변경 실패율 (CFR)** | **${cfr} %** | ${cfr <= 15 ? '🟢 Elite (0-15%)' : '🔴 Low'} |
+
+            > *측정 기준: 머지된 PR ${totalDeployments}건, 해결된 버그 이슈 ${totalBugs}건 기반 실시간 자동 집계*
+            `;
+            await core.summary.addRaw(summaryTable).write();
+
+            // 6. JSON 파일로 저장 (대시보드 연동용)
+            const fs = require('fs');
+            const metricsData = {
+              updated_at: new Date().toISOString(),
+              total_deployments: totalDeployments,
+              avg_lead_time_hours: parseFloat(avgLeadTimeHours),
+              avg_mttr_hours: parseFloat(avgMttrHours),
+              change_failure_rate_percent: parseFloat(cfr),
+              history: mergedPRs.map(pr => ({
+                id: pr.number,
+                title: pr.title,
+                merged_at: pr.merged_at,
+                lead_time_hours: parseFloat(((new Date(pr.merged_at) - new Date(pr.created_at)) / (1000 * 60 * 60)).toFixed(2))
+              }))
+            };
+            fs.writeFileSync('dora-metrics.json', JSON.stringify(metricsData, null, 2));
+
+      - name: 💾 Commit & Push updated metrics
         run: |
-          echo "[DORA Metric] Deployment Frequency: +1 (Deployment Triggered)"
-          echo "[DORA Metric] Change Failure Rate: Monitoring for new bugs (bugs / total_deployments)"
-          echo "💡 현업에서는 이 단계에서 배포 스크립트를 실행하고, 그 결과를 메트릭 서버로 전송합니다."
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add dora-metrics.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(dora): DORA 메트릭 실측치 자동 갱신" && git push)
