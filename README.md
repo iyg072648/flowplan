@@ -40,4 +40,8 @@
 | **15주차** | **배포 및 테스트** | - 클라우드 서버(AWS 등) 배포<br>- 팀원 및 지인 대상 베타 테스트(피드백 수집) | 실제 서비스 접속 링크 |
 | **16주차** | **마무리** | - 사용자 피드백 기반 최종 버그 수정<br>- 프로젝트 결과 보고서 작성 및 발표 시연(PPT, 영상) 준비 | 최종 발표 자료, 시연 영상 |
 
-<!-- dora test -->
+## 6. 프로젝트 Wiki & 가이드 문서
+프로젝트 설정, 개발 가이드, 트러블슈팅 문서는 아래 Wiki에서 확인하실 수 있습니다:
+- 🚀 **[Getting Started](docs/wiki/Getting-Started.md)**: 로컬 개발 환경 설치 및 실행 가이드
+- 🛠️ **[Development Guide](docs/wiki/Development-Guide.md)**: 브랜치 전략, 커밋 컨벤션, 코드 리뷰 규칙
+- 🚨 **[Troubleshooting](docs/wiki/Troubleshooting.md)**: 개발 중 자주 발생하는 오류 및 해결 방법
