@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-10-14T10:24:38.052Z",
-  "total_deployments": 1,
-  "avg_lead_time_hours": 0,
+  "updated_at": "2026-10-24T07:57:57.379Z",
+  "total_deployments": 2,
+  "avg_lead_time_hours": 0.04,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 100,
+  "change_failure_rate_percent": 50,
   "history": [
+    {
+      "id": 25,
+      "title": "feat(auth): 카카오 소셜 로그인 연동 및 프로필 설정 기능 구현 (#7)",
+      "merged_at": "2026-10-24T07:57:48Z",
+      "lead_time_hours": 0.07
+    },
     {
       "id": 24,
       "title": "test: dora pr",
