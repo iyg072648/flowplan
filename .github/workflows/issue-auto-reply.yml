@@ -1,0 +1,38 @@
+name: Issue Auto Responder
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  auto-reply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 💬 Post Welcome & SLA Notification Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueAuthor = context.payload.issue.user.login;
+            const isBug = (context.payload.issue.labels || []).some(l => l.name === 'bug' || l.name === 'type: bug');
+
+            const commentBody = `
+            안녕하세요 @${issueAuthor}님! FlowPlan 프로젝트에 이슈를 등록해 주셔서 감사합니다. 🙇‍♂️
+
+            - **확인 안내:** 담당 엔지니어가 내용을 확인한 후 **24~48시간 이내(SLA 기준)**에 답변 또는 라벨 지정을 진행할 예정입니다.
+            - **참고 문서:** 
+              - 🚀 설치 및 실행: [Getting Started](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/wiki/Getting-Started.md)
+              - 🚨 문제 해결: [Troubleshooting](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/wiki/Troubleshooting.md)
+              - 📚 기술 결정 내역: [ADR Records](https://github.com/${context.repo.owner}/${context.repo.repo}/tree/main/docs/adr)
+
+            ${isBug ? '> ⚠️ **버그 리포트 안내:** 재현 경로와 에러 로그를 상세히 적어주시면 더 신속한 해결이 가능합니다.' : ''}
+            `;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: commentBody.trim()
+            });
