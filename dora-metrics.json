@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-10-24T08:40:31.311Z",
-  "total_deployments": 2,
-  "avg_lead_time_hours": 0.04,
+  "updated_at": "2026-10-30T04:46:25.307Z",
+  "total_deployments": 3,
+  "avg_lead_time_hours": 0.03,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 50,
+  "change_failure_rate_percent": 33.3,
   "history": [
+    {
+      "id": 28,
+      "title": "feat(db): MySQL 데이터베이스 및 전체 테이블 자동 생성(Migration) 로직 구축 (#8)",
+      "merged_at": "2026-10-30T04:46:17Z",
+      "lead_time_hours": 0.01
+    },
     {
       "id": 25,
       "title": "feat(auth): 카카오 소셜 로그인 연동 및 프로필 설정 기능 구현 (#7)",
