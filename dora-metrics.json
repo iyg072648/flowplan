@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-10-30T04:46:25.307Z",
-  "total_deployments": 3,
-  "avg_lead_time_hours": 0.03,
+  "updated_at": "2026-10-30T05:01:22.699Z",
+  "total_deployments": 4,
+  "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 33.3,
+  "change_failure_rate_percent": 25,
   "history": [
+    {
+      "id": 29,
+      "title": "feat(calendar): 캘린더 및 To-do 리스트 UI, Task API 연동 구현 (#9)",
+      "merged_at": "2026-10-30T05:01:14Z",
+      "lead_time_hours": 0.01
+    },
     {
       "id": 28,
       "title": "feat(db): MySQL 데이터베이스 및 전체 테이블 자동 생성(Migration) 로직 구축 (#8)",
