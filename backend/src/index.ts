@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
+import taskRoutes from './routes/taskRoutes';
 import { initDB } from './config/db';
 
 dotenv.config();
@@ -22,6 +23,7 @@ app.get('/health', (req, res) => {
 // 라우터 연결
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api', taskRoutes);
 
 // DB 초기화 및 서버 기동
 initDB().then(() => {

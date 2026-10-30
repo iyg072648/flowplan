@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
+import { CalendarScreen } from './src/screens/CalendarScreen';
 
 export default function App() {
   const [token, setToken] = useState<string | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [nickname, setNickname] = useState('열공홍길동');
+  const [targetExam, setTargetExam] = useState('수능 수학');
   const [currentScreen, setCurrentScreen] = useState<'LOGIN' | 'PROFILE_SETUP' | 'HOME'>('LOGIN');
 
   const handleLoginSuccess = (accessToken: string, newUser: boolean) => {
@@ -39,13 +42,19 @@ export default function App() {
           onComplete={handleProfileComplete}
         />
       )}
-      {currentScreen === 'HOME' && (
-        <View style={styles.homeContainer}>
-          <Text style={styles.homeTitle}>🎉 FlowPlan 메인 대시보드</Text>
-          <Text style={styles.homeDesc}>카카오 로그인 및 인증이 성공적으로 완료되었습니다!</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>로그아웃</Text>
-          </TouchableOpacity>
+      {currentScreen === 'HOME' && token && (
+        <View style={{ flex: 1 }}>
+          <View style={styles.topBar}>
+            <Text style={styles.topLogo}>FlowPlan</Text>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+              <Text style={styles.logoutBtnText}>로그아웃</Text>
+            </TouchableOpacity>
+          </View>
+          <CalendarScreen
+            accessToken={token}
+            nickname={nickname}
+            targetExam={targetExam}
+          />
         </View>
       )}
     </SafeAreaView>
@@ -57,33 +66,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  homeContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
-  },
-  homeTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  homeDesc: {
-    fontSize: 15,
-    color: '#4B5563',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  logoutButton: {
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    backgroundColor: '#EF4444',
-    borderRadius: 8,
+    borderBottomWidth: 1,
+    borderColor: '#F1F5F9',
   },
-  logoutText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
+  topLogo: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#4F46E5',
+    letterSpacing: -0.5,
+  },
+  logoutBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#FEE2E2',
+    borderRadius: 6,
+  },
+  logoutBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#EF4444',
   },
 });
