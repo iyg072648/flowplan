@@ -3,13 +3,14 @@ import { SafeAreaView, StatusBar, StyleSheet, View, Text, TouchableOpacity } fro
 import { LoginScreen } from './src/screens/LoginScreen';
 import { ProfileSetupScreen } from './src/screens/ProfileSetupScreen';
 import { CalendarScreen } from './src/screens/CalendarScreen';
+import { GoalCreateScreen } from './src/screens/GoalCreateScreen';
 
 export default function App() {
   const [token, setToken] = useState<string | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
   const [nickname, setNickname] = useState('열공홍길동');
   const [targetExam, setTargetExam] = useState('수능 수학');
-  const [currentScreen, setCurrentScreen] = useState<'LOGIN' | 'PROFILE_SETUP' | 'HOME'>('LOGIN');
+  const [currentScreen, setCurrentScreen] = useState<'LOGIN' | 'PROFILE_SETUP' | 'HOME' | 'GOAL_CREATE'>('LOGIN');
 
   const handleLoginSuccess = (accessToken: string, newUser: boolean) => {
     setToken(accessToken);
@@ -46,9 +47,17 @@ export default function App() {
         <View style={{ flex: 1 }}>
           <View style={styles.topBar}>
             <Text style={styles.topLogo}>FlowPlan</Text>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-              <Text style={styles.logoutBtnText}>로그아웃</Text>
-            </TouchableOpacity>
+            <View style={styles.topActions}>
+              <TouchableOpacity
+                onPress={() => setCurrentScreen('GOAL_CREATE')}
+                style={styles.newGoalBtn}
+              >
+                <Text style={styles.newGoalBtnText}>+ 새 목표</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+                <Text style={styles.logoutBtnText}>로그아웃</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <CalendarScreen
             accessToken={token}
@@ -56,6 +65,13 @@ export default function App() {
             targetExam={targetExam}
           />
         </View>
+      )}
+      {currentScreen === 'GOAL_CREATE' && token && (
+        <GoalCreateScreen
+          accessToken={token}
+          onGoalCreated={() => setCurrentScreen('HOME')}
+          onCancel={() => setCurrentScreen('HOME')}
+        />
       )}
     </SafeAreaView>
   );
@@ -80,6 +96,22 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#4F46E5',
     letterSpacing: -0.5,
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  newGoalBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#4F46E5',
+    borderRadius: 6,
+  },
+  newGoalBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   logoutBtn: {
     paddingVertical: 6,
