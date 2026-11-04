@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-10-30T05:01:22.699Z",
-  "total_deployments": 4,
+  "updated_at": "2026-11-04T18:45:15.143Z",
+  "total_deployments": 5,
   "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 25,
+  "change_failure_rate_percent": 20,
   "history": [
+    {
+      "id": 31,
+      "title": "feat(ocr): 목차 이미지 OCR 텍스트 추출 로직 및 API 구현 (#10)",
+      "merged_at": "2026-11-04T18:45:04Z",
+      "lead_time_hours": 0.02
+    },
     {
       "id": 29,
       "title": "feat(calendar): 캘린더 및 To-do 리스트 UI, Task API 연동 구현 (#9)",
