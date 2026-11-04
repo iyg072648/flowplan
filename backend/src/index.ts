@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import taskRoutes from './routes/taskRoutes';
+import ocrRoutes from './routes/ocrRoutes';
 import { initDB } from './config/db';
 
 dotenv.config();
@@ -24,6 +25,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api', taskRoutes);
+app.use('/api/ocr', ocrRoutes);
 
 // DB 초기화 및 서버 기동
 initDB().then(() => {
