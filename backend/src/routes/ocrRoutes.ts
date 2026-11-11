@@ -17,3 +17,4 @@ const upload = multer({
 router.post('/extract', authenticateJWT, upload.single('image'), extractTextFromImage);
 
 export default router;
+

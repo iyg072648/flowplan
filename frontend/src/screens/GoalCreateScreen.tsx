@@ -369,3 +369,4 @@ const styles = StyleSheet.create({
   nextBtn: { flex: 2, paddingVertical: 14, borderRadius: 10, backgroundColor: '#4F46E5', alignItems: 'center' },
   nextBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });
+

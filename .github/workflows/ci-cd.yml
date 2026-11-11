@@ -1,0 +1,130 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ==========================================
+  # 1단계. Build Job (빌드 및 아티팩트 업로드)
+  # ==========================================
+  build:
+    name: 🏗️ Build Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js (20.x)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 📦 Install Dependencies
+        run: |
+          cd backend
+          npm ci || npm install
+
+      - name: ⚙️ TypeScript Compile
+        run: |
+          cd backend
+          npm run build
+
+      - name: 📤 Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist/
+          retention-days: 7
+
+  # ==========================================
+  # 2단계. Test Job (Matrix 전략 + Secrets 주입 + 아티팩트 다운로드)
+  # ==========================================
+  test:
+    name: 🧪 Lint & Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [18.x, 20.x]
+    runs-on: ${{ matrix.os }}
+    env:
+      NODE_ENV: test
+      # Secrets를 통한 민감 정보 안전 주입 (미등록 시 fallback 안전 키 제공)
+      JWT_SECRET: ${{ secrets.JWT_SECRET || 'flowplan_ci_jwt_secret_safe_key_2026' }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'flowplan_ci_db_safe_password' }}
+      DB_USER: root
+      DB_NAME: flowplan_ci_test
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: 📥 Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist
+
+      - name: 📦 Install Dependencies
+        run: |
+          cd backend
+          npm ci || npm install
+
+      - name: 🔍 Run Linter (TypeScript Type Check)
+        run: |
+          cd backend
+          npm run lint
+
+      - name: 🧪 Run Automated Tests
+        run: |
+          cd backend
+          npm test
+
+  # ==========================================
+  # 3단계. Deploy Job (의존성: Test 완료 후 실행)
+  # ==========================================
+  deploy:
+    name: 🚀 Deploy to Production
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-dist
+          path: dist
+
+      - name: 🛡️ Verify Build Artifact Integrity
+        run: |
+          echo "🔍 Verifying compiled artifacts..."
+          test -f dist/index.js || (echo "dist/index.js not found!" && exit 1)
+          echo "✅ Build artifact verified successfully."
+          ls -la dist/
+
+      - name: 🌐 Deploy Application (Simulation)
+        env:
+          PROD_JWT_SECRET: ${{ secrets.JWT_SECRET || 'prod_fallback_secret' }}
+        run: |
+          echo "=========================================="
+          echo "🚀 Deploying FlowPlan Backend to Cloud Host..."
+          echo "Target Environment: Production"
+          echo "Deployment Strategy: Blue-Green Rolling Update"
+          echo "Status: Health check ready"
+          echo "=========================================="
+          echo "🎉 FlowPlan deployment completed successfully!"

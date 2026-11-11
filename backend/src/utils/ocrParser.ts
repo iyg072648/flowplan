@@ -16,8 +16,8 @@ export const parseTableOfContents = (rawText: string): string[] => {
     // 1. 빈 줄 또는 너무 짧은 줄(1글자 기호 등) 무시
     if (trimmed.length <= 1) continue;
 
-    // 2. 머리말, 판권, 차례, 목차 등 제외 키워드 필터링
-    if (/^(목차|차례|contents|table of contents|머리말|프롤로그|index)$/i.test(trimmed)) {
+    // 2. 머리말, 판권, 차례, 목차 등 제외 키워드 필터링 (예: "목차", "목차 (Contents)", "차례 [목차]")
+    if (/^(목차|차례|contents|table of contents|머리말|프롤로그|index)(\s*[\(\[].*[\)\]])?$/i.test(trimmed)) {
       continue;
     }
 
