@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-11-11T07:04:59.007Z",
-  "total_deployments": 7,
+  "updated_at": "2026-11-11T07:22:01.328Z",
+  "total_deployments": 8,
   "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 14.3,
+  "change_failure_rate_percent": 12.5,
   "history": [
+    {
+      "id": 35,
+      "title": "feat: OpenAI API 연동 및 목표 자동 분할(Smart Task Breakdown) 프롬프트 구현 (#11)",
+      "merged_at": "2026-11-11T07:21:53Z",
+      "lead_time_hours": 0.02
+    },
     {
       "id": 34,
       "title": "ci: Reusable Workflow & Composite Action 도입 및 Matrix 확장과 선택적 배포 구현",
