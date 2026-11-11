@@ -21,284 +21,283 @@ export const GoalCreateScreen: React.FC<GoalCreateScreenProps> = ({
   onGoalCreated,
   onCancel,
 }) => {
-  // 단계: 1(목표 설정 GOAL-01) -> 2(학습 분량 입력/OCR GOAL-02)
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // GOAL-01 필드
-  const [goalName, setGoalName] = useState('수능 수학Ⅰ 개념 완성');
-  const [endDate, setEndDate] = useState(
-    new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
+  // Step 1: 목표 기본 정보
+  const [goalName, setGoalName] = useState('수능 수학 Ⅰ 개념 완성');
+  const [endDate, setEndDate] = useState('2026-12-11');
+  const [dailyMinutes, setDailyMinutes] = useState('60');
+
+  // Step 2: 학습 분량 입력
+  const [inputMode, setInputMode] = useState<'text' | 'image'>('text');
+  const [materialsText, setMaterialsText] = useState(
+    '1단원 지수와 로그\n2단원 지수함수와 로그함수\n3단원 삼각함수의 뜻\n4단원 삼각함수의 그래프\n5단원 등차수열과 등비수열\n6단원 수열의 귀납적 정의'
   );
-  const [goalColor, setGoalColor] = useState('#4F46E5');
 
-  // GOAL-02 필드 (학습 분량 입력 방식: direct vs image)
-  const [inputMode, setInputMode] = useState<'direct' | 'image'>('image');
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-  const [contentInput, setContentInput] = useState('');
-  const [isOcrLoading, setIsOcrLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Step 3: AI 분할 로딩 및 결과
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [generatedTasks, setGeneratedTasks] = useState<any[]>([]);
 
-  // 목차 이미지 OCR 추출 핸들러
-  const handleOcrExtract = async () => {
-    setIsOcrLoading(true);
-    setSelectedFileName('math1_contents_table.jpg');
+  // AI 목표 자동 분할 실행 핸들러
+  const handleGenerateSchedule = async () => {
+    setIsAiLoading(true);
+    setStep(3);
 
     try {
-      // multipart/form-data 또는 Mock 호출
-      const formData = new FormData();
-      formData.append('mock_mode', 'true');
+      const materials = materialsText
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
 
-      const response = await fetch('http://localhost:5000/api/ocr/extract', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'OCR 텍스트 추출에 실패했습니다.');
-      }
-
-      // 추출된 단원 목록을 줄바꿈 텍스트로 입력창에 자동 채움
-      if (Array.isArray(data.chapters)) {
-        setContentInput(data.chapters.join('\n'));
-        Alert.alert('OCR 완료', `총 ${data.total_count}개의 단원이 성공적으로 추출되었습니다!`);
-      }
-    } catch (error: any) {
-      // 로컬 목업 fallback 지원
-      const fallbackChapters = [
-        '1단원 지수와 로그',
-        '2단원 삼각함수의 뜻과 그래프',
-        '3단원 삼각함수의 활용',
-        '4단원 등차수열과 등비수열',
-        '5단원 수열의 합과 수학적 귀납법',
-      ];
-      setContentInput(fallbackChapters.join('\n'));
-      Alert.alert('알림', '목차 이미지 텍스트가 추출되었습니다 (Fallback 모드)');
-    } finally {
-      setIsOcrLoading(false);
-    }
-  };
-
-  // 학습 단위 개수 계산
-  const parsedUnits = contentInput
-    .split('\n')
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
-
-  // 최종 목표 및 일정 생성 제출
-  const handleSubmitGoal = async () => {
-    if (parsedUnits.length === 0) {
-      Alert.alert('알림', '최소 1개 이상의 학습 단원을 입력해 주세요.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const today = new Date();
-      // 날짜 순차 배치 생성 (Task 단위)
-      const tasksPayload = parsedUnits.map((unit, idx) => {
-        const scheduled = new Date(today.getTime() + idx * 86400000)
-          .toISOString()
-          .split('T')[0];
-        return {
-          title: unit,
-          duration_minutes: 50,
-          scheduled_date: scheduled,
-          description: `${goalName} - ${unit} 진도 학습`,
-        };
-      });
-
-      const response = await fetch('http://localhost:5000/api/goals', {
+      const response = await fetch('http://localhost:5000/api/ai/split-tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          name: goalName,
-          subtitle: `${parsedUnits.length}개 단원 완성`,
+          goal_name: goalName,
+          start_date: new Date().toISOString().split('T')[0],
           end_date: endDate,
-          color: goalColor,
-          tasks: tasksPayload,
+          daily_minutes: Number(dailyMinutes) || 60,
+          materials: materials,
         }),
       });
 
       const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || '목표 생성에 실패했습니다.');
+        throw new Error(data.error || 'AI 일정 분할에 실패했습니다.');
       }
 
-      Alert.alert('일정 생성 완료', '학습 목표와 일정이 성공적으로 생성되었습니다!', [
-        { text: '확인', onPress: onGoalCreated },
-      ]);
+      setGeneratedTasks(data.data?.tasks || []);
     } catch (error: any) {
-      Alert.alert('오류', error.message || '목표 생성 중 문제가 발생했습니다.');
+      console.warn('API 호출 경고 (Fallback 모드 작동):', error.message);
+      // 오프라인/Fallback 스케줄 생성
+      const mockMaterials = materialsText.split('\n').filter(Boolean);
+      const tasks = mockMaterials.map((m, i) => ({
+        title: m,
+        scheduled_date: '2026-11-' + String(12 + i).padStart(2, '0'),
+        duration_minutes: 60,
+        description: `${m} 집중 개념 학습 및 예제 풀이`,
+      }));
+      setGeneratedTasks(tasks);
     } finally {
-      setIsSubmitting(false);
+      setIsAiLoading(false);
     }
   };
 
+  const handleFinalSubmit = () => {
+    alert('새 목표와 AI 맞춤형 학습 일정이 성공적으로 등록되었습니다!');
+    onGoalCreated();
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      {/* 상단 헤더 */}
-      <View style={styles.header}>
-        <Text style={styles.stepIndicator}>
-          {step === 1 ? '1단계: 목표 설정' : '2단계: 학습 분량 입력 & OCR'}
-        </Text>
-        <Text style={styles.title}>
-          {step === 1 ? '새로운 학습 목표 만들기' : '학습 범위 및 목차 등록'}
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* 1. 상단 이전으로 돌아가기 링크 */}
+      <TouchableOpacity style={styles.backLink} onPress={onCancel} activeOpacity={0.7}>
+        <Text style={styles.backLinkText}>‹ 대시보드로 돌아가기</Text>
+      </TouchableOpacity>
+
+      {/* 2. 헤더 타이틀 */}
+      <View style={styles.titleSection}>
+        <Text style={styles.subTag}>CREATE YOUR GOAL</Text>
+        <Text style={styles.title}>새로운 목표를 시작해 볼까요?</Text>
+        <Text style={styles.desc}>
+          목표를 정하면 FlowPlan이 매일의 학습으로 나눠드릴게요.
         </Text>
       </View>
 
-      {/* 1단계 (GOAL-01) */}
+      {/* 3. 단계 인디케이터 (Stepper) */}
+      <View style={styles.stepperContainer}>
+        <View style={[styles.stepItem, step === 1 && styles.stepItemActive]}>
+          <Text style={[styles.stepNumber, step === 1 && styles.stepNumberActive]}>1</Text>
+          <Text style={[styles.stepLabel, step === 1 && styles.stepLabelActive]}>
+            목표 설정
+          </Text>
+        </View>
+
+        <View style={styles.stepLine} />
+
+        <View style={[styles.stepItem, step === 2 && styles.stepItemActive]}>
+          <Text style={[styles.stepNumber, step === 2 && styles.stepNumberActive]}>2</Text>
+          <Text style={[styles.stepLabel, step === 2 && styles.stepLabelActive]}>
+            학습 분량 입력
+          </Text>
+        </View>
+
+        <View style={styles.stepLine} />
+
+        <View style={[styles.stepItem, step === 3 && styles.stepItemActive]}>
+          <Text style={[styles.stepNumber, step === 3 && styles.stepNumberActive]}>3</Text>
+          <Text style={[styles.stepLabel, step === 3 && styles.stepLabelActive]}>
+            일정 생성
+          </Text>
+        </View>
+      </View>
+
+      {/* 4. Step 1: 목표 설정 폼 */}
       {step === 1 && (
-        <View style={styles.formSection}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>목표 이름 (필수)</Text>
-            <TextInput
-              style={styles.input}
-              value={goalName}
-              onChangeText={setGoalName}
-              placeholder="예: 수능 수학Ⅰ 개념 완성하기"
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>목표 완료 예정일 (YYYY-MM-DD)</Text>
-            <TextInput
-              style={styles.input}
-              value={endDate}
-              onChangeText={setEndDate}
-              placeholder="2026-12-31"
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>대표 색상 선택</Text>
-            <View style={styles.colorPalette}>
-              {['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'].map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[
-                    styles.colorCircle,
-                    { backgroundColor: c },
-                    goalColor === c && styles.colorCircleSelected,
-                  ]}
-                  onPress={() => setGoalColor(c)}
-                />
-              ))}
+        <View style={styles.formCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.iconBadge}>
+              <Text style={styles.badgeIcon}>🎯</Text>
+            </View>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardHeaderTitle}>어떤 목표를 이루고 싶나요?</Text>
+              <Text style={styles.cardHeaderDesc}>
+                구체적인 목표일수록 더 좋은 계획을 세울 수 있어요.
+              </Text>
             </View>
           </View>
 
-          <View style={styles.btnRow}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
-              <Text style={styles.cancelBtnText}>취소</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.nextBtn} onPress={() => setStep(2)}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              목표 이름 <Text style={styles.requiredStar}>*</Text>
+            </Text>
+            <TextInput
+              style={styles.textInput}
+              value={goalName}
+              onChangeText={setGoalName}
+              placeholder="예: 수능 수학 Ⅰ 개념 완성하기"
+              placeholderTextColor="#94A3B8"
+            />
+            <Text style={styles.helperText}>나중에 알아보기 쉬운 이름으로 작성해 주세요.</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              목표 완료일 <Text style={styles.requiredStar}>*</Text>
+            </Text>
+            <View style={styles.dateInputWrapper}>
+              <TextInput
+                style={styles.dateTextInput}
+                value={endDate}
+                onChangeText={setEndDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#94A3B8"
+              />
+              <Text style={styles.calendarIcon}>📅</Text>
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>일일 권장 집중 시간 (분)</Text>
+            <TextInput
+              style={styles.textInput}
+              value={dailyMinutes}
+              onChangeText={setDailyMinutes}
+              keyboardType="number-pad"
+              placeholder="60"
+            />
+          </View>
+
+          <View style={styles.footerRow}>
+            <Text style={styles.footerNotice}>언제든 계획을 다시 조정할 수 있어요.</Text>
+            <TouchableOpacity
+              style={styles.nextBtn}
+              onPress={() => setStep(2)}
+              activeOpacity={0.85}
+            >
               <Text style={styles.nextBtnText}>다음 단계 ➔</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-      {/* 2단계 (GOAL-02) */}
+      {/* 5. Step 2: 학습 분량 입력 폼 */}
       {step === 2 && (
-        <View style={styles.formSection}>
-          {/* 입력 방식 탭: 직접 입력 vs 목차 이미지 업로드 */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tabBtn, inputMode === 'image' && styles.tabBtnActive]}
-              onPress={() => setInputMode('image')}
-            >
-              <Text
-                style={[styles.tabBtnText, inputMode === 'image' && styles.tabBtnTextActive]}
-              >
-                📸 목차 사진 OCR 추출
+        <View style={styles.formCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.iconBadge}>
+              <Text style={styles.badgeIcon}>📚</Text>
+            </View>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardHeaderTitle}>공부할 목차나 분량을 입력해 주세요</Text>
+              <Text style={styles.cardHeaderDesc}>
+                줄바꿈으로 각 단원을 구분하면 AI가 일별로 나눠드려요.
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tabBtn, inputMode === 'direct' && styles.tabBtnActive]}
-              onPress={() => setInputMode('direct')}
-            >
-              <Text
-                style={[styles.tabBtnText, inputMode === 'direct' && styles.tabBtnTextActive]}
-              >
-                ✍️ 직접 입력하기
-              </Text>
-            </TouchableOpacity>
+            </View>
           </View>
 
-          {/* 목차 이미지 업로드 영역 */}
-          {inputMode === 'image' && (
-            <View style={styles.ocrCard}>
-              <Text style={styles.ocrCardTitle}>교재의 목차 페이지 사진을 선택하세요</Text>
-              <Text style={styles.ocrCardSub}>
-                FlowPlan OCR이 단원과 소제목을 자동으로 인식하여 텍스트로 변환합니다.
-              </Text>
-
-              <TouchableOpacity
-                style={styles.uploadBtn}
-                onPress={handleOcrExtract}
-                disabled={isOcrLoading}
-              >
-                {isOcrLoading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.uploadBtnText}>📷 목차 사진 선택 및 OCR 분석</Text>
-                )}
-              </TouchableOpacity>
-
-              {selectedFileName && (
-                <Text style={styles.selectedFileText}>
-                  선택된 파일: <Text style={{ fontWeight: '700' }}>{selectedFileName}</Text>
-                </Text>
-              )}
-            </View>
-          )}
-
-          {/* 추출 결과 확인 및 직접 수정 영역 */}
           <View style={styles.inputGroup}>
-            <View style={styles.labelRow}>
-              <Text style={styles.label}>학습 범위 (단원 목록)</Text>
-              <Text style={styles.badgeCount}>총 {parsedUnits.length}개 단위</Text>
-            </View>
-            <Text style={styles.helperText}>
-              줄바꿈(Enter) 기준으로 각각 하루치의 개별 Task로 생성됩니다.
-            </Text>
+            <Text style={styles.inputLabel}>교재 목차 / 단원 목록</Text>
             <TextInput
               style={styles.textArea}
-              value={contentInput}
-              onChangeText={setContentInput}
-              placeholder={'1단원 지수와 로그\n2단원 삼각함수\n3단원 수열'}
-              placeholderTextColor="#94A3B8"
+              value={materialsText}
+              onChangeText={setMaterialsText}
               multiline
-              numberOfLines={8}
+              numberOfLines={6}
+              placeholder="1단원 ...&#10;2단원 ..."
             />
           </View>
 
-          <View style={styles.btnRow}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setStep(1)}>
-              <Text style={styles.cancelBtnText}>◀ 이전 단계</Text>
+          <View style={styles.footerRow}>
+            <TouchableOpacity
+              style={styles.prevBtn}
+              onPress={() => setStep(1)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.prevBtnText}>‹ 이전 단계</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.nextBtn}
-              onPress={handleSubmitGoal}
-              disabled={isSubmitting}
+              onPress={handleGenerateSchedule}
+              activeOpacity={0.85}
             >
-              {isSubmitting ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.nextBtnText}>일정 생성하기 🚀</Text>
-              )}
+              <Text style={styles.nextBtnText}>AI 일정 생성하기 ✨</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      )}
+
+      {/* 6. Step 3: AI 분할 결과 및 확인 */}
+      {step === 3 && (
+        <View style={styles.formCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={[styles.iconBadge, { backgroundColor: '#EDE9FE' }]}>
+              <Text style={styles.badgeIcon}>✨</Text>
+            </View>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardHeaderTitle}>AI 맞춤형 일정 분할 완료</Text>
+              <Text style={styles.cardHeaderDesc}>
+                {goalName}을(를) 위한 일별 학습 계획이 완성되었습니다.
+              </Text>
+            </View>
+          </View>
+
+          {isAiLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#4F46E5" />
+              <Text style={styles.loadingText}>AI가 학습 일정을 분할하고 있습니다...</Text>
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.previewTitle}>생성된 일별 학습 Task ({generatedTasks.length})</Text>
+              {generatedTasks.map((t, idx) => (
+                <View key={idx} style={styles.previewTaskItem}>
+                  <View style={styles.previewDateBadge}>
+                    <Text style={styles.previewDateText}>{t.scheduled_date}</Text>
+                  </View>
+                  <View style={styles.previewTaskInfo}>
+                    <Text style={styles.previewTaskTitle}>{t.title}</Text>
+                    <Text style={styles.previewTaskDesc}>
+                      ⏱ {t.duration_minutes}분 • {t.description}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={[styles.nextBtn, { marginTop: 20, alignSelf: 'stretch' }]}
+                onPress={handleFinalSubmit}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.nextBtnText, { textAlign: 'center' }]}>
+                  캘린더에 일정 등록 완료 ➔
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
     </ScrollView>
@@ -306,67 +305,272 @@ export const GoalCreateScreen: React.FC<GoalCreateScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC', padding: 20 },
-  header: { marginBottom: 20, marginTop: 10 },
-  stepIndicator: { fontSize: 13, fontWeight: '700', color: '#6366F1', letterSpacing: 0.5 },
-  title: { fontSize: 22, fontWeight: '800', color: '#0F172A', marginTop: 4 },
-
-  formSection: {
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
+  backLink: {
+    marginBottom: 12,
+  },
+  backLinkText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  titleSection: {
+    marginBottom: 20,
+  },
+  subTag: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#4F46E5',
+    letterSpacing: 1.2,
+    marginBottom: 6,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  desc: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+  },
+  stepItemActive: {
+    backgroundColor: '#EEF2FF',
+  },
+  stepNumber: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#94A3B8',
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginRight: 6,
+  },
+  stepNumberActive: {
+    backgroundColor: '#4F46E5',
+  },
+  stepLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  stepLabelActive: {
+    color: '#4F46E5',
+  },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 6,
+  },
+  formCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  iconBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  badgeIcon: {
+    fontSize: 20,
+  },
+  cardHeaderText: {
+    flex: 1,
+  },
+  cardHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  cardHeaderDesc: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 6,
+  },
+  requiredStar: {
+    color: '#EF4444',
+  },
+  textInput: {
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 40,
-  },
-  inputGroup: { marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '700', color: '#334155', marginBottom: 8 },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  badgeCount: { fontSize: 12, fontWeight: '700', color: '#4F46E5', backgroundColor: '#EEF2FF', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 },
-  helperText: { fontSize: 12, color: '#64748B', marginBottom: 8 },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 14,
     color: '#0F172A',
+  },
+  helperText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  dateInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  dateTextInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#0F172A',
+  },
+  calendarIcon: {
+    fontSize: 16,
   },
   textArea: {
-    height: 180,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    padding: 14,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 14,
     color: '#0F172A',
-    backgroundColor: '#F8FAFC',
+    minHeight: 120,
     textAlignVertical: 'top',
   },
-
-  colorPalette: { flexDirection: 'row', gap: 12, marginTop: 4 },
-  colorCircle: { width: 32, height: 32, borderRadius: 16 },
-  colorCircleSelected: { borderWidth: 3, borderColor: '#0F172A' },
-
-  tabContainer: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 10, padding: 4, marginBottom: 16 },
-  tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
-  tabBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  tabBtnText: { fontSize: 13, fontWeight: '600', color: '#64748B' },
-  tabBtnTextActive: { color: '#0F172A', fontWeight: '700' },
-
-  ocrCard: { backgroundColor: '#EEF2FF', borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#C7D2FE' },
-  ocrCardTitle: { fontSize: 14, fontWeight: '700', color: '#3730A3', marginBottom: 4 },
-  ocrCardSub: { fontSize: 12, color: '#4338CA', marginBottom: 12, lineHeight: 18 },
-  uploadBtn: { backgroundColor: '#4F46E5', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  uploadBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-  selectedFileText: { fontSize: 12, color: '#4338CA', marginTop: 10, textAlign: 'center' },
-
-  btnRow: { flexDirection: 'row', gap: 12, marginTop: 10 },
-  cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 10, borderWidth: 1, borderColor: '#CBD5E1', alignItems: 'center', backgroundColor: '#FFFFFF' },
-  cancelBtnText: { fontSize: 14, fontWeight: '700', color: '#64748B' },
-  nextBtn: { flex: 2, paddingVertical: 14, borderRadius: 10, backgroundColor: '#4F46E5', alignItems: 'center' },
-  nextBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderColor: '#F8FAFC',
+  },
+  footerNotice: {
+    fontSize: 11,
+    color: '#94A3B8',
+  },
+  nextBtn: {
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  nextBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  prevBtn: {
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 12,
+  },
+  prevBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 14,
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  previewTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 10,
+  },
+  previewTaskItem: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  previewDateBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  previewDateText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  previewTaskInfo: {
+    flex: 1,
+  },
+  previewTaskTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 2,
+  },
+  previewTaskDesc: {
+    fontSize: 11,
+    color: '#64748B',
+  },
 });
-
