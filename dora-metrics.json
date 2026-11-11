@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-11-11T06:55:58.794Z",
-  "total_deployments": 6,
+  "updated_at": "2026-11-11T07:04:59.007Z",
+  "total_deployments": 7,
   "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 16.7,
+  "change_failure_rate_percent": 14.3,
   "history": [
+    {
+      "id": 34,
+      "title": "ci: Reusable Workflow & Composite Action 도입 및 Matrix 확장과 선택적 배포 구현",
+      "merged_at": "2026-11-11T07:04:51Z",
+      "lead_time_hours": 0.02
+    },
     {
       "id": 33,
       "title": "ci: Build-Test-Deploy 복합 파이프라인 및 Matrix 전략 워크플로우 구축",
