@@ -1,16 +1,58 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
   define: {
     global: 'window',
+    __DEV__: JSON.stringify(true),
   },
   resolve: {
-    alias: {
-      'react-native': 'react-native-web',
+    alias: [
+      {
+        find: /^react-native$/,
+        replacement: path.resolve(__dirname, 'node_modules/react-native-web/dist/index.js'),
+      },
+      {
+        find: /^react-native\/(.*)$/,
+        replacement: path.resolve(__dirname, 'node_modules/react-native-web/dist/$1'),
+      },
+    ],
+    extensions: [
+      '.web.mjs',
+      '.web.js',
+      '.web.jsx',
+      '.web.ts',
+      '.web.tsx',
+      '.mjs',
+      '.js',
+      '.jsx',
+      '.ts',
+      '.tsx',
+      '.json',
+    ],
+  },
+  optimizeDeps: {
+    include: ['react-native-web'],
+    esbuildOptions: {
+      resolveExtensions: [
+        '.web.mjs',
+        '.web.js',
+        '.web.jsx',
+        '.web.ts',
+        '.web.tsx',
+        '.mjs',
+        '.js',
+        '.jsx',
+        '.ts',
+        '.tsx',
+        '.json',
+      ],
     },
-    extensions: ['.web.tsx', '.web.ts', '.web.jsx', '.web.js', '.tsx', '.ts', '.jsx', '.js'],
   },
   server: {
     port: 3000,
