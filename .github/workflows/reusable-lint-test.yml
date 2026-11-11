@@ -1,0 +1,69 @@
+name: Reusable Lint & Test Workflow
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: 'Runner Operating System'
+        required: true
+        type: string
+      node-version:
+        description: 'Target Node.js version'
+        required: true
+        type: string
+      working-directory:
+        description: 'Working directory containing the app'
+        required: false
+        type: string
+        default: 'backend'
+      artifact-name:
+        description: 'Name of the build artifact to download'
+        required: false
+        type: string
+        default: 'backend-dist'
+    secrets:
+      JWT_SECRET:
+        required: false
+      DB_PASSWORD:
+        required: false
+
+jobs:
+  lint-and-test:
+    name: 🧪 Test (${{ inputs.os }} / Node ${{ inputs.node-version }})
+    runs-on: ${{ inputs.os }}
+    env:
+      NODE_ENV: test
+      # Secrets를 통한 민감 정보 주입 (미등록 시 fallback 안전 키 제공)
+      JWT_SECRET: ${{ secrets.JWT_SECRET || 'flowplan_ci_jwt_secret_safe_key_2026' }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'flowplan_ci_db_safe_password' }}
+      DB_USER: root
+      DB_NAME: flowplan_ci_test
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Setup Environment via Composite Action
+        uses: ./.github/actions/setup-node-env
+        with:
+          node-version: ${{ inputs.node-version }}
+          working-directory: ${{ inputs.working-directory }}
+
+      - name: 📥 Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.working-directory }}/dist
+
+      - name: 🔍 Run Linter (TypeScript Type Check)
+        shell: bash
+        run: |
+          cd ${{ inputs.working-directory }}
+          echo "🔍 Running Linter in ${{ inputs.working-directory }}..."
+          npm run lint
+
+      - name: 🧪 Run Automated Unit Tests
+        shell: bash
+        run: |
+          cd ${{ inputs.working-directory }}
+          echo "🧪 Running Unit Tests in ${{ inputs.working-directory }}..."
+          npm test

@@ -1,0 +1,44 @@
+name: 'Setup Node.js Environment & Dependencies'
+description: 'Sets up Node.js with npm caching and installs project dependencies'
+
+inputs:
+  node-version:
+    description: 'Node.js version to setup'
+    required: false
+    default: '20.x'
+  working-directory:
+    description: 'Working directory containing package.json and package-lock.json'
+    required: false
+    default: 'backend'
+
+outputs:
+  cache-hit:
+    description: 'Whether npm cache was restored'
+    value: ${{ steps.setup-node.outputs.cache-hit }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🟢 Setup Node.js ${{ inputs.node-version }}
+      id: setup-node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+    - name: 📊 Check Cache Status
+      shell: bash
+      run: |
+        echo "=========================================="
+        echo "🔍 Node.js Version: ${{ inputs.node-version }}"
+        echo "📁 Working Directory: ${{ inputs.working-directory }}"
+        echo "💾 NPM Cache Hit: ${{ steps.setup-node.outputs.cache-hit }}"
+        echo "=========================================="
+
+    - name: 📦 Install Dependencies
+      shell: bash
+      run: |
+        cd ${{ inputs.working-directory }}
+        echo "⚡ Installing dependencies using cache..."
+        npm ci || npm install
