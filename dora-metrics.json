@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-11-11T07:22:01.328Z",
-  "total_deployments": 8,
+  "updated_at": "2026-11-11T07:31:30.455Z",
+  "total_deployments": 9,
   "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 12.5,
+  "change_failure_rate_percent": 11.1,
   "history": [
+    {
+      "id": 36,
+      "title": "feat: React + Vite 기반 모바일 웹 프론트엔드 환경 구축",
+      "merged_at": "2026-11-11T07:31:22Z",
+      "lead_time_hours": 0.01
+    },
     {
       "id": 35,
       "title": "feat: OpenAI API 연동 및 목표 자동 분할(Smart Task Breakdown) 프롬프트 구현 (#11)",
