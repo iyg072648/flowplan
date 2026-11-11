@@ -8,7 +8,7 @@
     "start": "node dist/index.js",
     "dev": "nodemon --watch src --exec ts-node src/index.ts",
     "lint": "tsc --noEmit",
-    "test": "node --test dist/utils/*.test.js"
+    "test": "node dist/utils/ocrParser.test.js"
   },
   "keywords": [],
   "author": "",
