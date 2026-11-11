@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-11-04T18:45:15.143Z",
-  "total_deployments": 5,
+  "updated_at": "2026-11-11T06:55:58.794Z",
+  "total_deployments": 6,
   "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 20,
+  "change_failure_rate_percent": 16.7,
   "history": [
+    {
+      "id": 33,
+      "title": "ci: Build-Test-Deploy 복합 파이프라인 및 Matrix 전략 워크플로우 구축",
+      "merged_at": "2026-11-11T06:55:50Z",
+      "lead_time_hours": 0.01
+    },
     {
       "id": 31,
       "title": "feat(ocr): 목차 이미지 OCR 텍스트 추출 로직 및 API 구현 (#10)",
