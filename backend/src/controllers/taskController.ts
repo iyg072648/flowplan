@@ -122,36 +122,56 @@ export const toggleTaskDone = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 5. 밀린 일정 동적 재조정 (POST /api/tasks/reschedule)
+// 5. 밀린 일정 동적 재조정 및 DB/UI 즉각 반영 (POST /api/tasks/reschedule)
 export const rescheduleTasks = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
-  const { strategy, start_date, end_date } = req.body;
+  const { strategy, start_date, end_date, goal_id } = req.body;
 
   try {
     const today = new Date().toISOString().split('T')[0];
     const startDate = start_date || today;
 
-    // 1. 과거 미완료 Task 조회 (scheduled_date < today AND is_done = false)
-    const [delayedRows] = await pool.query<RowDataPacket[]>(
-      'SELECT id, title, duration_minutes, scheduled_date FROM tasks WHERE user_id = ? AND scheduled_date < ? AND is_done = 0',
-      [userId, startDate]
-    );
+    // 1. 과거 미완료 Task 조회 (scheduled_date < startDate AND is_done = false)
+    let delayedSql =
+      'SELECT id, title, duration_minutes, scheduled_date FROM tasks WHERE user_id = ? AND scheduled_date < ? AND is_done = 0';
+    const delayedParams: any[] = [userId, startDate];
+
+    if (goal_id) {
+      delayedSql += ' AND goal_id = ?';
+      delayedParams.push(goal_id);
+    }
+
+    const [delayedRows] = await pool.query<RowDataPacket[]>(delayedSql, delayedParams);
 
     if (delayedRows.length === 0) {
+      // 갱신된 전체 태스크 반환
+      const [allTasks] = await pool.query<RowDataPacket[]>(
+        `SELECT t.*, g.title as goal_name, g.color as goal_color 
+         FROM tasks t 
+         JOIN goals g ON t.goal_id = g.id 
+         WHERE t.user_id = ? 
+         ORDER BY t.scheduled_date ASC, t.id ASC`,
+        [userId]
+      );
+
       return res.status(200).json({
         message: '밀린 일정이 없어 재조정할 항목이 없습니다.',
         rescheduled_tasks_count: 0,
-        tasks: [],
+        rescheduled_tasks: [],
+        all_tasks: allTasks,
       });
     }
 
     // 2. 미래의 목표 최대 종료일 조회 (또는 요청받은 end_date)
     let endDate = end_date;
     if (!endDate) {
-      const [goalRows] = await pool.query<RowDataPacket[]>(
-        'SELECT MAX(end_date) as max_end_date FROM goals WHERE user_id = ?',
-        [userId]
-      );
+      let goalSql = 'SELECT MAX(end_date) as max_end_date FROM goals WHERE user_id = ?';
+      const goalParams: any[] = [userId];
+      if (goal_id) {
+        goalSql += ' AND id = ?';
+        goalParams.push(goal_id);
+      }
+      const [goalRows] = await pool.query<RowDataPacket[]>(goalSql, goalParams);
       endDate = goalRows[0]?.max_end_date;
       if (!endDate) {
         const d = new Date();
@@ -161,10 +181,14 @@ export const rescheduleTasks = async (req: AuthRequest, res: Response) => {
     }
 
     // 3. 미래의 기존 Task 조회 (부하 고려용)
-    const [remainingRows] = await pool.query<RowDataPacket[]>(
-      'SELECT id, title, duration_minutes, scheduled_date FROM tasks WHERE user_id = ? AND scheduled_date >= ? AND is_done = 0',
-      [userId, startDate]
-    );
+    let remainingSql =
+      'SELECT id, title, duration_minutes, scheduled_date FROM tasks WHERE user_id = ? AND scheduled_date >= ? AND is_done = 0';
+    const remainingParams: any[] = [userId, startDate];
+    if (goal_id) {
+      remainingSql += ' AND goal_id = ?';
+      remainingParams.push(goal_id);
+    }
+    const [remainingRows] = await pool.query<RowDataPacket[]>(remainingSql, remainingParams);
 
     // 4. 재조정 알고리즘 실행
     const result = calculateReschedule({
@@ -175,7 +199,7 @@ export const rescheduleTasks = async (req: AuthRequest, res: Response) => {
       strategy: strategy || 'EVEN_DISTRIBUTION',
     });
 
-    // 5. DB에 재배치된 날짜 일괄 업데이트
+    // 5. DB에 재배치된 날짜 일괄 업데이트 (트랜잭션)
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
@@ -193,12 +217,23 @@ export const rescheduleTasks = async (req: AuthRequest, res: Response) => {
       connection.release();
     }
 
+    // 6. 재조정 결과가 즉각 반영된 최신 전체 태스크 조회
+    const [allTasks] = await pool.query<RowDataPacket[]>(
+      `SELECT t.*, g.title as goal_name, g.color as goal_color 
+       FROM tasks t 
+       JOIN goals g ON t.goal_id = g.id 
+       WHERE t.user_id = ? 
+       ORDER BY t.scheduled_date ASC, t.id ASC`,
+      [userId]
+    );
+
     return res.status(200).json({
       message: `총 ${result.totalDelayedCount}개의 밀린 일정이 성공적으로 재배치되었습니다.`,
       rescheduled_tasks_count: result.totalDelayedCount,
       strategy: result.strategy,
-      tasks: result.rescheduledTasks,
+      rescheduled_tasks: result.rescheduledTasks,
       daily_loads: result.dailyLoads,
+      all_tasks: allTasks,
     });
   } catch (error: any) {
     return res.status(500).json({ error: '일정 재조정 실패', details: error.message });
