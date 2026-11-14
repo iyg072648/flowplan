@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-11-14T03:17:50.267Z",
-  "total_deployments": 11,
+  "updated_at": "2026-11-14T03:40:12.647Z",
+  "total_deployments": 12,
   "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 9.1,
+  "change_failure_rate_percent": 8.3,
   "history": [
+    {
+      "id": 39,
+      "title": "feat(frontend): 반응형 모바일 및 PC 데스크톱 대시보드 UI/UX 리디자인",
+      "merged_at": "2026-11-14T03:40:05Z",
+      "lead_time_hours": 0.01
+    },
     {
       "id": 38,
       "title": "feat: 동적 일정 재조정(Rescheduling) 알고리즘 및 API 구현 (#13)",
