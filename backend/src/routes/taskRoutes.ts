@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { getMyGoals, createGoalWithTasks, getTasks, toggleTaskDone } from '../controllers/taskController';
+import {
+  getMyGoals,
+  createGoalWithTasks,
+  getTasks,
+  toggleTaskDone,
+  rescheduleTasks,
+} from '../controllers/taskController';
 import { authenticateJWT } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -11,6 +17,7 @@ router.get('/goals', getMyGoals);
 router.post('/goals', createGoalWithTasks);
 router.get('/tasks', getTasks);
 router.patch('/tasks/:id/toggle', toggleTaskDone);
+router.post('/tasks/reschedule', rescheduleTasks);
 
 export default router;
 
