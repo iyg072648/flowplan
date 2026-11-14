@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-11-14T03:40:12.647Z",
-  "total_deployments": 12,
+  "updated_at": "2026-11-14T03:44:46.550Z",
+  "total_deployments": 13,
   "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 8.3,
+  "change_failure_rate_percent": 7.7,
   "history": [
+    {
+      "id": 40,
+      "title": "feat(schedule): 재조정된 스케줄 DB 및 UI 즉각 반영 로직 구현 (fixes #14)",
+      "merged_at": "2026-11-14T03:44:39Z",
+      "lead_time_hours": 0.02
+    },
     {
       "id": 39,
       "title": "feat(frontend): 반응형 모바일 및 PC 데스크톱 대시보드 UI/UX 리디자인",
