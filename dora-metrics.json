@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-11-11T07:46:27.134Z",
-  "total_deployments": 10,
+  "updated_at": "2026-11-14T03:17:50.267Z",
+  "total_deployments": 11,
   "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 10,
+  "change_failure_rate_percent": 9.1,
   "history": [
+    {
+      "id": 38,
+      "title": "feat: 동적 일정 재조정(Rescheduling) 알고리즘 및 API 구현 (#13)",
+      "merged_at": "2026-11-14T03:17:43Z",
+      "lead_time_hours": 0.05
+    },
     {
       "id": 37,
       "title": "feat: 모바일 웹 UI 전체 개편 및 하단 탭 내비게이션(홈/캘린더/새목표/통계/마이) 구현 (#12)",
