@@ -70,6 +70,7 @@ export default function App() {
           <HomeScreen
             nickname={nickname}
             targetExam={targetExam}
+            accessToken={token || undefined}
             onNavigateToCalendar={() => setActiveTab('CALENDAR')}
             onNavigateToGoalCreate={() => setIsGoalCreateModal(true)}
           />
