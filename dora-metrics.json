@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-11-14T03:44:46.550Z",
-  "total_deployments": 13,
+  "updated_at": "2026-11-21T06:06:52.347Z",
+  "total_deployments": 14,
   "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 7.7,
+  "change_failure_rate_percent": 7.1,
   "history": [
+    {
+      "id": 42,
+      "title": "feat(timer): 뽀모도로 타이머 구현 및 순공시간 백엔드 연동 (fixes #15)",
+      "merged_at": "2026-11-21T06:06:43Z",
+      "lead_time_hours": 0.02
+    },
     {
       "id": 40,
       "title": "feat(schedule): 재조정된 스케줄 DB 및 UI 즉각 반영 로직 구현 (fixes #14)",
