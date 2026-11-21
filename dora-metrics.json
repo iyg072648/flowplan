@@ -1,10 +1,16 @@
 {
-  "updated_at": "2026-11-21T06:13:47.930Z",
-  "total_deployments": 15,
+  "updated_at": "2026-11-21T06:29:05.404Z",
+  "total_deployments": 16,
   "avg_lead_time_hours": 0.02,
   "avg_mttr_hours": 23.74,
-  "change_failure_rate_percent": 6.7,
+  "change_failure_rate_percent": 6.3,
   "history": [
+    {
+      "id": 44,
+      "title": "test(qa): 전체 기능 통합 테스트 구축 및 쿼리 버그 수정 (fixes #17)",
+      "merged_at": "2026-11-21T06:28:57Z",
+      "lead_time_hours": 0.02
+    },
     {
       "id": 43,
       "title": "feat(stats): 누적 학습 데이터 통계 및 시각화 차트 구현 (fixes #16)",
