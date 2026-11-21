@@ -146,7 +146,7 @@ export const rescheduleTasks = async (req: AuthRequest, res: Response) => {
     if (delayedRows.length === 0) {
       // 갱신된 전체 태스크 반환
       const [allTasks] = await pool.query<RowDataPacket[]>(
-        `SELECT t.*, g.title as goal_name, g.color as goal_color 
+        `SELECT t.*, g.name as goal_name, g.color as goal_color 
          FROM tasks t 
          JOIN goals g ON t.goal_id = g.id 
          WHERE t.user_id = ? 
@@ -219,7 +219,7 @@ export const rescheduleTasks = async (req: AuthRequest, res: Response) => {
 
     // 6. 재조정 결과가 즉각 반영된 최신 전체 태스크 조회
     const [allTasks] = await pool.query<RowDataPacket[]>(
-      `SELECT t.*, g.title as goal_name, g.color as goal_color 
+      `SELECT t.*, g.name as goal_name, g.color as goal_color 
        FROM tasks t 
        JOIN goals g ON t.goal_id = g.id 
        WHERE t.user_id = ? 
