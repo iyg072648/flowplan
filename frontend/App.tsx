@@ -85,7 +85,7 @@ export default function App() {
           />
         );
       case 'STATS':
-        return <StatsScreen />;
+        return <StatsScreen accessToken={token || undefined} nickname={nickname} />;
       case 'MY':
         return (
           <MyPageScreen
