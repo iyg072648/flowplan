@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   ActivityIndicator,
 } from 'react-native';
+import { PomodoroTimerModal } from '../components/PomodoroTimerModal';
 
 interface Task {
   id: string;
@@ -78,6 +79,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const [delayedCount, setDelayedCount] = useState(1);
   const [isRescheduling, setIsRescheduling] = useState(false);
+
+  // 뽀모도로 타이머 상태 (Issue #15)
+  const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
+  const [timerTargetTask, setTimerTargetTask] = useState<{ id?: string; title: string }>({
+    title: '오늘의 집중 학습',
+  });
+  const [todayFocusedMinutes, setTodayFocusedMinutes] = useState(35);
+
+  const openTimerForTask = (task?: Task) => {
+    if (task) {
+      setTimerTargetTask({ id: task.id, title: task.title });
+    } else {
+      setTimerTargetTask({ title: '오늘의 집중 학습' });
+    }
+    setIsTimerModalOpen(true);
+  };
+
+  const handleSessionSaved = (minutes: number, completedTaskId?: string) => {
+    setTodayFocusedMinutes(prev => prev + minutes);
+    if (completedTaskId) {
+      setTasks(prev =>
+        prev.map(t => (t.id === completedTaskId ? { ...t, isDone: true } : t))
+      );
+    }
+  };
 
   // 동적 재조정 알고리즘 실행 및 DB/UI 즉각 반영 핸들러 (Issue #14)
   const handleReschedule = async () => {
@@ -153,10 +179,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <Text style={styles.heroBold}>{completedCount}개</Text>를 완료했어요.
         </Text>
 
-        <TouchableOpacity style={styles.planBtn} onPress={onNavigateToCalendar} activeOpacity={0.85}>
-          <Text style={styles.planBtnText}>오늘의 계획 보기</Text>
-          <Text style={styles.planBtnArrow}>➔</Text>
-        </TouchableOpacity>
+        <View style={styles.heroActionRow}>
+          <TouchableOpacity style={styles.planBtn} onPress={onNavigateToCalendar} activeOpacity={0.85}>
+            <Text style={styles.planBtnText}>오늘의 계획 보기</Text>
+            <Text style={styles.planBtnArrow}>➔</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.heroTimerBtn}
+            onPress={() => openTimerForTask()}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.heroTimerBtnText}>⏱ 뽀모도로 시작</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* 우측 원형 달성률 비주얼 (동심원 레이어) */}
@@ -264,7 +299,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </View>
               </View>
 
-              <Text style={styles.chevron}>›</Text>
+              <View style={styles.taskRightActions}>
+                <TouchableOpacity
+                  style={styles.taskTimerChip}
+                  onPress={() => openTimerForTask(task)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.taskTimerChipText}>⏱ 타이머</Text>
+                </TouchableOpacity>
+                <Text style={styles.chevron}>›</Text>
+              </View>
             </TouchableOpacity>
             {idx < tasks.length - 1 && <View style={styles.taskDivider} />}
           </View>
@@ -285,7 +329,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       <View style={styles.statMetricRow}>
         <View style={styles.statMetricBox}>
-          <Text style={styles.statMetricValue}>0h 35m</Text>
+          <Text style={styles.statMetricValue}>
+            {Math.floor(todayFocusedMinutes / 60)}h {todayFocusedMinutes % 60}m
+          </Text>
           <Text style={styles.statMetricLabel}>오늘 집중 시간</Text>
         </View>
         <View style={styles.statMetricDivider} />
@@ -394,6 +440,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {renderDailyTasksCard()}
         </View>
       )}
+
+      {/* 3. 뽀모도로 타이머 모달 (Issue #15) */}
+      <PomodoroTimerModal
+        visible={isTimerModalOpen}
+        onClose={() => setIsTimerModalOpen(false)}
+        taskTitle={timerTargetTask.title}
+        taskId={timerTargetTask.id}
+        accessToken={accessToken}
+        onSessionSaved={handleSessionSaved}
+      />
     </ScrollView>
   );
 };
@@ -963,6 +1019,45 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#CBD5E1',
     marginLeft: 10,
+  },
+  heroActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
+  },
+  heroTimerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+  },
+  heroTimerBtnText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  taskRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  taskTimerChip: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+  },
+  taskTimerChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4F46E5',
   },
   taskDivider: {
     height: 1,

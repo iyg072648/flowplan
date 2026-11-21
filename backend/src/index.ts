@@ -6,6 +6,7 @@ import userRoutes from './routes/userRoutes';
 import taskRoutes from './routes/taskRoutes';
 import ocrRoutes from './routes/ocrRoutes';
 import aiRoutes from './routes/aiRoutes';
+import timerRoutes from './routes/timerRoutes';
 import { initDB } from './config/db';
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.use('/api/users', userRoutes);
 app.use('/api', taskRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/timer', timerRoutes);
 
 // DB 초기화 및 서버 기동
 initDB().then(() => {
